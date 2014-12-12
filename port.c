@@ -17,6 +17,7 @@ static void *gc_thread(void *arg)
 	struct timeval now;
 
 	td = (struct tracedump *) arg;
+	sigemptyset(&ss);
 	sigaddset(&ss, SIGTERM);
 	sigaddset(&ss, SIGINT);
 	pthread_sigmask(SIG_SETMASK, &ss, NULL);

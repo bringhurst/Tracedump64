@@ -128,6 +128,7 @@ void *sniffer_thread(void *arg)
 	sigset_t ss;
 
 	td = (struct tracedump *) arg;
+	sigemptyset(&ss);
 	sigaddset(&ss, SIGTERM);
 	sigaddset(&ss, SIGINT);
 	pthread_sigmask(SIG_SETMASK, &ss, NULL);
