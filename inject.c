@@ -25,13 +25,13 @@ static void _prepare(struct pid *sp)
 	snprintf(buf, sizeof buf, "/proc/%d/maps", sp->pid);
 	fp = fopen(buf, "r");
 	while (fgets(buf, sizeof buf, fp)) {
-		if (strlen(buf) < 49 + 6)
+		if (strlen(buf) < 73 + 6)
 			continue;
 
 		/* found it? */
-		if (strncmp(buf + 49, "[vdso]", 6) == 0) {
+		if (strncmp(buf + 73, "[vdso]", 6) == 0) {
 			/* parse address */
-			buf[8] = 0;
+			buf[12] = 0;
 			sp->vdso_addr = strtoul(buf, NULL, 16);
 			break;
 		}
