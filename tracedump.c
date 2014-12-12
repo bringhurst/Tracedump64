@@ -316,11 +316,11 @@ int main(int argc, char *argv[])
 
 		/* get regs, skip syscalls other than socketcall */
 		ptrace_getregs(sp, &regs);
-		if (regs.orig_eax != SYS_socketcall)
+		if (regs.orig_rax != SYS_socket)
 			goto next_syscall;
 
 		/* filter anything different than bind(), connect() and sendto() */
-		sp->code = regs.ebx;
+		sp->code = regs.rbx;
 		switch (sp->code) {
 			case SYS_BIND:
 			case SYS_CONNECT:
@@ -333,10 +333,10 @@ int main(int argc, char *argv[])
 		sp->in_socketcall = !sp->in_socketcall;
 
 		/* on exit from a successful bind() or enter to connect()/sendto() */
-		if ((sp->in_socketcall == false && sp->code == SYS_BIND && regs.eax == 0) ||
+		if ((sp->in_socketcall == false && sp->code == SYS_BIND && regs.rax == 0) ||
 		    (sp->in_socketcall == true  && sp->code != SYS_BIND)) {
 			/* get fd number */
-			ptrace_read(sp, regs.ecx, &fd_arg, 4);
+			ptrace_read(sp, regs.rcx, &fd_arg, 4);
 
 			/* handle the socket underlying given fd */
 			handle_socket(sp, fd_arg);

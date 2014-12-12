@@ -110,7 +110,7 @@ int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code
 		if (type == AT_VALUE) {
 			stack32[i++] = sv;
 		} else { /* i.e. its a memory arg */
-			stack32[i++] = regs.esp - ss_mem + j;
+			stack32[i++] = regs.rsp - ss_mem + j;
 
 			/* copy the memory */
 			ptr = va_arg(vl, void *);
@@ -120,17 +120,17 @@ int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code
 	} while (true);
 	va_end(vl);
 
-	ptrace_write(sp, regs.esp - ss, stack, ss);
+	ptrace_write(sp, regs.rsp - ss, stack, ss);
 
 	/*
 	 * write the code and run
 	 */
 	_prepare(sp);
 
-	regs2.eax = 102;            // socketcall
-	regs2.ebx = sc_code;
-	regs2.ecx = regs.esp - ss;
-	regs2.eip = sp->vdso_addr;  // gateway to int3
+	regs2.rax = 102;            // socketcall
+	regs2.rbx = sc_code;
+	regs2.rcx = regs.rsp - ss;
+	regs2.rip = sp->vdso_addr;  // gateway to int3
 
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 0, true);   // enter...
@@ -140,7 +140,7 @@ int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code
 	 * read back
 	 */
 	ptrace_getregs(sp, &regs2);
-	ptrace_read(sp, regs.esp - ss_mem, stack_mem, ss_mem);
+	ptrace_read(sp, regs.rsp - ss_mem, stack_mem, ss_mem);
 
 	va_start(vl, sc_code);
 	do {
@@ -162,7 +162,7 @@ int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code
 	ptrace_setregs(sp, &regs);
 	mmatic_free(stack);
 
-	return regs2.eax;
+	return regs2.rax;
 }
 
 void inject_escape_socketcall(struct tracedump *td, struct pid *sp)
@@ -174,7 +174,7 @@ void inject_escape_socketcall(struct tracedump *td, struct pid *sp)
 	memcpy(&sp->regs, &regs, sizeof regs);
 
 	/* update EBX so it is invalid */
-	regs.ebx = 0;
+	regs.rbx = 0;
 	ptrace_setregs(sp, &regs);
 
 	/* run the invalid socketcall and wait */
@@ -190,8 +190,8 @@ void inject_restore_socketcall(struct tracedump *td, struct pid *sp)
 	/* prepare */
 	_prepare(sp);
 	memcpy(&regs2, &sp->regs, sizeof regs2);
-	regs2.eax = sp->regs.orig_eax;
-	regs2.eip = sp->vdso_addr;
+	regs2.rax = sp->regs.orig_rax;
+	regs2.rip = sp->vdso_addr;
 
 	/* exec */
 	ptrace_setregs(sp, &regs2);
@@ -200,7 +200,7 @@ void inject_restore_socketcall(struct tracedump *td, struct pid *sp)
 
 	/* rewrite the return code */
 	ptrace_getregs(sp, &regs2);
-	sp->regs.eax = regs2.eax;
+	sp->regs.rax = regs2.rax;
 
 	/* restore */
 	ptrace_setregs(sp, &sp->regs);
