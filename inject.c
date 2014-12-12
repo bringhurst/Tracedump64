@@ -70,9 +70,9 @@ int32_t inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, stru
 	_prepare(sp);
 
 	/* execute syscall */
-	regs2.rax = 51;		// getsockname
-	regs2.rdi = sa;		// addr
-	regs2.rsi = &size;	// addr_len
+	regs2.rax = 51; // getsockname
+	regs2.rdi = (size_t) sa; // addr
+	regs2.rsi = (size_t) &size; // addr_len
 	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 219, true);   // enter...
@@ -99,7 +99,7 @@ int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd)
 		.sin_port   = 0,
 		.sin_addr   = { INADDR_ANY }
 	};
-	socklen_t size = sizeof *sa;
+	socklen_t size = sizeof sa;
 
 	/* backup */
 	ptrace_getregs(sp, &regs);
@@ -110,8 +110,8 @@ int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd)
 
 	/* execute syscall */
 	regs2.rax = 49;		// bind
-	regs2.rdi = sa;		// addr
-	regs2.rsi = &size;	// addr_len
+	regs2.rdi = (size_t) &sa; // addr
+	regs2.rsi = (size_t) &size;	// addr_len
 	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 219, true);   // enter...
@@ -144,8 +144,8 @@ int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int leve
 	regs2.rdi = fd;
 	regs2.rsi = level;
 	regs2.rdx = optname;
-	regs2.r10 = optval;
-	regs2.r8 = optlen;
+	regs2.r10 = (size_t) optval;
+	regs2.r8 = (size_t) optlen;
 	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 219, true);   // enter...
