@@ -3,3 +3,6 @@ tracedump
 *.o
 .*.swp
 doc/out
+.cproject
+.project
+.settings
