@@ -17,7 +17,6 @@ static void _prepare(struct pid *sp)
 {
 	FILE *fp;
 	char buf[128];
-	unsigned char code[4] = { 0xcd, 0x80, 0, 0 }; // int 0x80
 
 	if (sp->vdso_addr)
 		return;

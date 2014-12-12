@@ -183,7 +183,6 @@ static void handle_attached_pid(struct pid *sp)
 	DIR *dh;
 	char buf[128];
 	struct dirent *de;
-	int fd;
 
 	snprintf(buf, sizeof buf, "/proc/%d/fd", sp->pid);
 	dh = opendir(buf);
@@ -194,7 +193,6 @@ static void handle_attached_pid(struct pid *sp)
 		if (!isdigit(de->d_name[0]))
 			continue;
 
-		fd = atoi(de->d_name);
 		handle_socket(sp, atoi(de->d_name));
 	}
 

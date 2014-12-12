@@ -233,11 +233,11 @@ void ptrace_read(struct pid *sp, unsigned long addr, void *vptr, int len)
 
 void ptrace_write(struct pid *sp, unsigned long addr, void *vptr, int len)
 {
-	int i, count;
+	int count;
 	uint32_t *word;
 
 	word = (uint32_t *) vptr;
-	i = count = 0;
+	count = 0;
 
 	while (count < len) {
 		run_ptrace(PTRACE_POKETEXT, sp, addr + count, *word++);
