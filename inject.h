@@ -54,54 +54,9 @@ enum arg_type {
  * @return                socketcall() return code
  */
 int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code, ...);
-
-/** Inject bind(fd, {AF_INET, INADDR_ANY, .port = 0}, 16) */
-static inline int inject_autobind(struct tracedump *td, struct pid *sp, int fd)
-{
-	struct sockaddr_in sa = {
-		.sin_family = AF_INET,
-		.sin_port   = 0,
-		.sin_addr   = { INADDR_ANY }
-	};
-
-	return inject_socketcall(td, sp, SYS_BIND,
-		AT_VALUE, fd,
-		AT_MEM_IN, sizeof sa, &sa,
-		AT_VALUE, sizeof sa,
-		AT_LAST);
-}
-
-/** Inject getsockname(fd, sa, 16)
- * @retval -2    socket not AF_INET */
-static inline int inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, struct sockaddr_in *sa)
-{
-	socklen_t size = sizeof *sa;
-	int rc;
-
-	rc = inject_socketcall(td, sp, SYS_GETSOCKNAME,
-		AT_VALUE, fd,
-		AT_MEM_INOUT, sizeof *sa, sa,
-		AT_MEM_INOUT, sizeof size, &size,
-		AT_LAST);
-
-	if (size != sizeof *sa || sa->sin_family != AF_INET)
-		return -2;
-	else
-		return rc;
-}
-
-/** Inject getsockopt() */
-static inline int inject_getsockopt(struct tracedump *td, struct pid *sp,
-	int fd, int level, int optname,
-	void *optval, socklen_t *optlen)
-{
-	return inject_socketcall(td, sp, SYS_GETSOCKOPT,
-		AT_VALUE, fd,
-		AT_VALUE, level,
-		AT_VALUE, optname,
-		AT_MEM_INOUT, *optlen, optval,
-		AT_MEM_INOUT, sizeof(socklen_t), optlen,
-		AT_LAST);
-}
+int32_t inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, struct sockaddr_in *sa);
+int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd);
+int32_t inject_getsockopt(struct tracedump *td, struct pid *sp, int fd, int level, int optname,
+		void *optval, socklen_t *optlen);
 
 #endif

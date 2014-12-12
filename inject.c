@@ -43,12 +43,121 @@ static void _prepare(struct pid *sp)
 
 #ifdef VDSO_PIGGYBACK
 	/* on x86-32 the INT 0x80 is already there :) */
-	sp->vdso_addr += 0x406;
+	sp->vdso_addr += 0x406; //??????????????????????????????????????????????????????
 #else
 	/* inject our code */
+	unsigned char code[4] = { 0xcd, 0x80, 0, 0 }; // int 0x80
 	dbg(3, "pid %d: installing code at 0x%x\n", sp->pid, sp->vdso_addr);
 	ptrace_write(sp, sp->vdso_addr, code, sizeof code);
 #endif
+}
+
+// Registers used for system call arguments in x86_64:
+// %rdi, %rsi, %rdx, %r10, %r8 and %r9.
+
+/** Inject getsockname(fd, sa, 16)
+ * @retval -2    socket not AF_INET */
+int32_t inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, struct sockaddr_in *sa)
+{
+	struct user_regs_struct regs, regs2;
+	socklen_t size = sizeof *sa;
+
+	/* backup */
+	ptrace_getregs(sp, &regs);
+	memcpy(&regs2, &regs, sizeof regs);
+
+	/* get vdso address*/
+	_prepare(sp);
+
+	/* execute syscall */
+	regs2.rax = 51;		// getsockname
+	regs2.rdi = sa;		// addr
+	regs2.rsi = &size;	// addr_len
+	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
+	ptrace_setregs(sp, &regs2);
+	ptrace_cont_syscall(sp, 219, true);   // enter...
+	ptrace_cont_syscall(sp, 219, true);   // ...and exit
+
+	/* read registers back */
+	ptrace_getregs(sp, &regs2);
+
+	/* restore from backup */
+	ptrace_setregs(sp, &regs);
+
+	if (sa->sin_family != AF_INET)
+		return -2;
+	else
+		return regs2.rax;
+}
+
+/** Inject bind(fd, {AF_INET, INADDR_ANY, .port = 0}, 16) */
+int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd)
+{
+	struct user_regs_struct regs, regs2;
+	struct sockaddr_in sa = {
+		.sin_family = AF_INET,
+		.sin_port   = 0,
+		.sin_addr   = { INADDR_ANY }
+	};
+	socklen_t size = sizeof *sa;
+
+	/* backup */
+	ptrace_getregs(sp, &regs);
+	memcpy(&regs2, &regs, sizeof regs);
+
+	/* get vdso address*/
+	_prepare(sp);
+
+	/* execute syscall */
+	regs2.rax = 49;		// bind
+	regs2.rdi = sa;		// addr
+	regs2.rsi = &size;	// addr_len
+	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
+	ptrace_setregs(sp, &regs2);
+	ptrace_cont_syscall(sp, 219, true);   // enter...
+	ptrace_cont_syscall(sp, 219, true);   // ...and exit
+
+	/* read registers back */
+	ptrace_getregs(sp, &regs2);
+
+	/* restore from backup */
+	ptrace_setregs(sp, &regs);
+
+	return regs2.rax;
+}
+
+/** Inject getsockopt() */
+int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int level, int optname,
+		void *optval, socklen_t *optlen)
+{
+	struct user_regs_struct regs, regs2;
+
+	/* backup */
+	ptrace_getregs(sp, &regs);
+	memcpy(&regs2, &regs, sizeof regs);
+
+	/* get vdso address*/
+	_prepare(sp);
+
+	/* execute syscall */
+	regs2.rax = 54;		// bind
+	regs2.rdi = fd;
+	regs2.rsi = level;
+	regs2.rdx = optname;
+	regs2.r10 = optval;
+	regs2.r8 = optlen;
+	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
+	ptrace_setregs(sp, &regs2);
+	ptrace_cont_syscall(sp, 219, true);   // enter...
+	ptrace_cont_syscall(sp, 219, true);   // ...and exit
+
+	/* read registers back */
+	ptrace_getregs(sp, &regs2);
+
+	/* restore from backup */
+	ptrace_setregs(sp, &regs);
+
+	return regs2.rax;
 }
 
 int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code, ...)
@@ -126,6 +235,7 @@ int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code
 	 * write the code and run
 	 */
 	_prepare(sp);
+
 
 	regs2.rax = 102;            // socketcall
 	regs2.rbx = sc_code;
