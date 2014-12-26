@@ -80,7 +80,7 @@ struct pid {
 	struct sock *ss;                      /**< cache */
 
 	struct user_regs_struct regs;         /**< regs backup */
-	uint32_t vdso_addr;                   /**< VDSO address (linux-gate.so.1) */
+	size_t vdso_addr;                   /**< VDSO address (linux-gate.so.1) */
 };
 
 /** Represents a socket */

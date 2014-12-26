@@ -16,7 +16,7 @@ static long _run_ptrace(enum __ptrace_request request, struct pid *sp,
 {
 	long rc;
 	int pid = sp ? sp->pid : 0;
-
+//	dbg(1, "Call: %d, %d, %p, %d\n", request, pid, &addr, data);
 	rc = ptrace(request, pid, addr, data);
 
 	/* rc equal -1 means error */
@@ -226,7 +226,7 @@ void ptrace_read(struct pid *sp, unsigned long addr, void *vptr, int len)
 
 	while (count < len) {
 		word = run_ptrace(PTRACE_PEEKTEXT, sp, addr + count, NULL);
-		count += 4;
+		count += 8;
 		ptr[i++] = word;
 	}
 }
@@ -234,14 +234,15 @@ void ptrace_read(struct pid *sp, unsigned long addr, void *vptr, int len)
 void ptrace_write(struct pid *sp, unsigned long addr, void *vptr, int len)
 {
 	int count;
-	uint32_t *word;
+	size_t *word;
 
-	word = (uint32_t *) vptr;
+	word = (size_t *) vptr;
 	count = 0;
 
 	while (count < len) {
+//		dbg(1, "Writing %p to %p\n", (void *) *word++, addr+count);
 		run_ptrace(PTRACE_POKETEXT, sp, addr + count, *word++);
-		count +=4;
+		count += 8;
 	}
 }
 
