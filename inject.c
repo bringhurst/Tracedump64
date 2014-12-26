@@ -42,7 +42,7 @@ static void _prepare(struct pid *sp)
 		dbg(0, "pid %d: no [vdso] memory region\n", sp->pid);
 
 	/* inject our code */
-	unsigned long code[4] = { 0x0F, 0x05, 0, 0 };
+	unsigned char code[4] = { 0x0F, 0x05, 0, 0 };
 	dbg(3, "pid %d: installing code at 0x%x\n", sp->pid, sp->vdso_addr);
 	ptrace_write(sp, sp->vdso_addr, code, sizeof code);
 }
