@@ -61,15 +61,23 @@ int32_t inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, stru
 	ptrace_getregs(sp, &regs);
 	memcpy(&regs2, &regs, sizeof regs);
 
+	/* Need to put data into the stack of the tracee process */
+	uint8_t *stack;
+	int memory_needed = size + sizeof size;
+	stack = mmatic_zalloc(td->mm, memory_needed);
+	memcpy(stack, sa, size);
+	memcpy(stack + size, &size, sizeof size);
+	ptrace_write(sp, regs.rsp - memory_needed, stack, memory_needed);
+
 	/* get vdso address*/
 	_prepare(sp);
-	dbg(1, "FD = %d\n", fd);
+
 	/* execute syscall */
 	regs2.rax = SYS_getsockname;
 	regs2.rdi = fd;
-	regs2.rsi = (size_t) sa; // addr
-	regs2.rdx = (size_t) &size; // addr_len
-	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
+	regs2.rsi = regs.rsp - memory_needed;			// addr
+	regs2.rdx = regs.rsp - memory_needed + size;	// addr_len
+	regs2.rip = sp->vdso_addr;
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 0, true);   // enter...
 	ptrace_cont_syscall(sp, 0, true);   // ...and exit
@@ -77,10 +85,16 @@ int32_t inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, stru
 	/* read registers back */
 	ptrace_getregs(sp, &regs2);
 
+	/* read back from the stack */
+	ptrace_read(sp, regs.rsp - memory_needed, stack, memory_needed);
+	memcpy(sa, stack, size);
+	memcpy(&size, stack + size, sizeof size);
+
+
 	/* restore from backup */
 	ptrace_setregs(sp, &regs);
 
-	if (sa->sin_family != AF_INET)
+	if (size != sizeof *sa || sa->sin_family != AF_INET)
 		return -2;
 	else
 		return regs2.rax;
@@ -101,14 +115,21 @@ int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd)
 	ptrace_getregs(sp, &regs);
 	memcpy(&regs2, &regs, sizeof regs);
 
+	/* Need to put data into the stack of the tracee process */
+	uint8_t *stack;
+	stack = mmatic_zalloc(td->mm, size);
+	memcpy(stack, &sa, size);
+	ptrace_write(sp, regs.rsp - size, stack, size);
+
 	/* get vdso address*/
 	_prepare(sp);
 
 	/* execute syscall */
 	regs2.rax = SYS_bind;
-	regs2.rdi = (size_t) &sa;	// addr
-	regs2.rsi = (size_t) &size;	// addr_len
-	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
+	regs2.rdi = fd;
+	regs2.rsi = regs.rsp - size;			// addr
+	regs2.rdx = size;	// addr_len
+	regs2.rip = sp->vdso_addr;
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 0, true);   // enter...
 	ptrace_cont_syscall(sp, 0, true);   // ...and exit
@@ -116,9 +137,12 @@ int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd)
 	/* read registers back */
 	ptrace_getregs(sp, &regs2);
 
+	/* read back from the stack */
+	ptrace_read(sp, regs.rsp - size, stack, size);
+	memcpy(&sa, stack, size);
+
 	/* restore from backup */
 	ptrace_setregs(sp, &regs);
-
 	return regs2.rax;
 }
 
@@ -132,6 +156,15 @@ int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int leve
 	ptrace_getregs(sp, &regs);
 	memcpy(&regs2, &regs, sizeof regs);
 
+
+	/* Need to put data into the stack of the tracee process */
+	uint8_t *stack;
+	int memory_needed = *optlen + sizeof *optlen;
+	stack = mmatic_zalloc(td->mm, memory_needed);
+	memcpy(stack, optval, *optlen);
+	memcpy(stack + *optlen, optlen, sizeof *optlen);
+	ptrace_write(sp, regs.rsp - memory_needed, stack, memory_needed);
+
 	/* get vdso address*/
 	_prepare(sp);
 
@@ -140,9 +173,9 @@ int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int leve
 	regs2.rdi = fd;
 	regs2.rsi = level;
 	regs2.rdx = optname;
-	regs2.r10 = (size_t) optval;
-	regs2.r8 = (size_t) optlen;
-	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
+	regs2.r10 = regs.rsp - memory_needed;
+	regs2.r8 = regs.rsp - memory_needed + *optlen;
+	regs2.rip = sp->vdso_addr;
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 0, true);   // enter...
 	ptrace_cont_syscall(sp, 0, true);   // ...and exit
@@ -150,9 +183,13 @@ int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int leve
 	/* read registers back */
 	ptrace_getregs(sp, &regs2);
 
+	ptrace_read(sp, regs.rsp - memory_needed, stack, memory_needed);
+	memcpy(optval, stack, *optlen);
+	memcpy(optlen, stack + *optlen, sizeof *optlen);
+
 	/* restore from backup */
 	ptrace_setregs(sp, &regs);
-
+	//TODO: WHY IS OPTLEN ZERO??????
 	return regs2.rax;
 }
 
@@ -166,7 +203,7 @@ void inject_escape_socketcall(struct tracedump *td, struct pid *sp)
 	memcpy(&sp->regs, &regs, sizeof regs);
 
 	/* update EBX so it is invalid */
-	regs.rbx = 0;
+	regs.rdi = 0;
 	ptrace_setregs(sp, &regs);
 
 	/* run the invalid socketcall and wait */

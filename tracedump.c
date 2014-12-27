@@ -140,16 +140,23 @@ static void handle_socket(struct pid *sp, int fd)
 			inject_escape_socketcall(td, sp);
 
 		/* check if AF_INET, get local address */
-		if (inject_getsockname_in(td, sp, fd, &sa) != 0)
-			goto handled;
+		if (inject_getsockname_in(td, sp, fd, &sa) != 0) {
+			dbg(1, "ONE\n");
+			goto handled;}
 
 		/* check if TCP/UDP */
 		optlen = sizeof ss->type;
-		if (inject_getsockopt(td, sp, fd, SOL_SOCKET, SO_TYPE, &ss->type, &optlen) != 0)
+		if (inject_getsockopt(td, sp, fd, SOL_SOCKET, SO_TYPE, &ss->type, &optlen) != 0) {
+			dbg(1, "TWO\n");
 			goto handled;
-		if (optlen != sizeof ss->type || (ss->type != SOCK_STREAM && ss->type != SOCK_DGRAM))
+		}
+		if ((ss->type != SOCK_STREAM && ss->type != SOCK_DGRAM)) {
+			dbg(1, "THREE\n");
+//			dbg(1, "optlen=%d; optlen_orig=%d; ss->type=%d\n", optlen, sizeof ss->type, ss->type);
 			goto handled;
+		}
 
+		dbg(1, "THIS\n");
 		/* autobind if necessary */
 		if (!sa.sin_port) {
 			if (inject_autobind(td, sp, fd) != 0) {
@@ -162,7 +169,7 @@ static void handle_socket(struct pid *sp, int fd)
 				goto handled;
 			}
 		}
-
+		dbg(1, "NEVER HAPPENS. PORT = %d\n", sa.sin_port);
 		ss->port = ntohs(sa.sin_port);
 
 		port_add(ss, true);
