@@ -33,7 +33,6 @@ static void _prepare(struct pid *sp)
 			/* parse address */
 			buf[12] = 0;
 			sp->vdso_addr = (size_t) strtoul(buf, NULL, 16);
-			dbg(1, "POINTER %p\n", sp->vdso_addr);
 			break;
 		}
 	}
@@ -42,6 +41,7 @@ static void _prepare(struct pid *sp)
 		dbg(0, "pid %d: no [vdso] memory region\n", sp->pid);
 
 	/* inject our code */
+	/* "0F 05" is code for x86_64 instruction SYSCALL */
 	unsigned char code[4] = { 0x0F, 0x05, 0, 0 };
 	dbg(3, "pid %d: installing code at 0x%x\n", sp->pid, sp->vdso_addr);
 	ptrace_write(sp, sp->vdso_addr, code, sizeof code);
@@ -65,7 +65,7 @@ int32_t inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, stru
 	_prepare(sp);
 	dbg(1, "FD = %d\n", fd);
 	/* execute syscall */
-	regs2.rax = 51; // getsockname
+	regs2.rax = SYS_getsockname;
 	regs2.rdi = fd;
 	regs2.rsi = (size_t) sa; // addr
 	regs2.rdx = (size_t) &size; // addr_len
@@ -105,7 +105,7 @@ int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd)
 	_prepare(sp);
 
 	/* execute syscall */
-	regs2.rax = 49;				// bind
+	regs2.rax = SYS_bind;
 	regs2.rdi = (size_t) &sa;	// addr
 	regs2.rsi = (size_t) &size;	// addr_len
 	regs2.rip = sp->vdso_addr;  // gateway to int3 ?????
@@ -136,7 +136,7 @@ int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int leve
 	_prepare(sp);
 
 	/* execute syscall */
-	regs2.rax = 54;		// bind
+	regs2.rax = SYS_getsockopt;
 	regs2.rdi = fd;
 	regs2.rsi = level;
 	regs2.rdx = optname;
