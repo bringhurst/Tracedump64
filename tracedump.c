@@ -314,30 +314,20 @@ int main(int argc, char *argv[])
 				continue;
 		}
 
-		/* get regs, skip syscalls other than socketcall */
+
 		ptrace_getregs(sp, &regs);
-		if (regs.orig_rax != SYS_socket)
-			goto next_syscall;
 
 		/* filter anything different than bind(), connect() and sendto() */
-		sp->code = regs.rbx;
-		switch (sp->code) {
-			case SYS_BIND:
-			case SYS_CONNECT:
-			case SYS_SENDTO:
-				break;
-			default:
-				goto next_syscall;
-		}
+		if (regs.orig_rax != SYS_bind && regs.orig_rax != SYS_connect && regs.orig_rax != SYS_sendto)
+			goto next_syscall;
 
 		sp->in_socketcall = !sp->in_socketcall;
 
 		/* on exit from a successful bind() or enter to connect()/sendto() */
-		if ((sp->in_socketcall == false && sp->code == SYS_BIND && regs.rax == 0) ||
-		    (sp->in_socketcall == true  && sp->code != SYS_BIND)) {
+		if ((sp->in_socketcall == false && regs.orig_rax == SYS_bind && regs.rax == SYS_restart_syscall) ||
+		    (sp->in_socketcall == true  && regs.orig_rax != SYS_bind)) {
 			/* get fd number */
-			ptrace_read(sp, regs.rcx, &fd_arg, 4);
-
+			fd_arg = regs.rdi;
 			/* handle the socket underlying given fd */
 			handle_socket(sp, fd_arg);
 		}
