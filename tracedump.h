@@ -87,7 +87,7 @@ struct pid {
 struct sock {
 	struct tracedump *td;                 /**< path to the root data structure */
 	int socknum;                          /**< socket number */
-	int type;                             /**< socket type, ie. SOCK_STREAM or SOCK_DGRAM */
+	unsigned char type;                   /**< socket type, ie. SOCK_STREAM or SOCK_DGRAM */
 	unsigned long port;                   /**< if TCP or UDP: port number */
 };
 

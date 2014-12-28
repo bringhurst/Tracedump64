@@ -169,6 +169,7 @@ int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int leve
 	_prepare(sp);
 
 	/* execute syscall */
+	/* int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen); */
 	regs2.rax = SYS_getsockopt;
 	regs2.rdi = fd;
 	regs2.rsi = level;
@@ -189,7 +190,7 @@ int32_t inject_getsockopt(struct tracedump *td, struct pid *sp,	int fd, int leve
 
 	/* restore from backup */
 	ptrace_setregs(sp, &regs);
-	//TODO: WHY IS OPTLEN ZERO??????
+
 	return regs2.rax;
 }
 

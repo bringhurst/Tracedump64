@@ -142,7 +142,8 @@ static void handle_socket(struct pid *sp, int fd)
 		/* check if AF_INET, get local address */
 		if (inject_getsockname_in(td, sp, fd, &sa) != 0) {
 			dbg(1, "ONE\n");
-			goto handled;}
+			goto handled;
+		}
 
 		/* check if TCP/UDP */
 		optlen = sizeof ss->type;
@@ -150,9 +151,8 @@ static void handle_socket(struct pid *sp, int fd)
 			dbg(1, "TWO\n");
 			goto handled;
 		}
-		if ((ss->type != SOCK_STREAM && ss->type != SOCK_DGRAM)) {
+		if (optlen != sizeof ss->type || (ss->type != SOCK_STREAM && ss->type != SOCK_DGRAM)) {
 			dbg(1, "THREE\n");
-//			dbg(1, "optlen=%d; optlen_orig=%d; ss->type=%d\n", optlen, sizeof ss->type, ss->type);
 			goto handled;
 		}
 
