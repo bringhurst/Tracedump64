@@ -1,4 +1,8 @@
 /*
+ * Adapted for x86_64 by:
+ * Ingvaras Merkys <ingvaras@gmail.com>
+ */
+/*
  * Copyright (C) 2011-2012 IITiS PAN Gliwice <http://www.iitis.pl/>
  * Author: Paweł Foremski <pjf@iitis.pl>
  * Licensed under GNU GPL v. 3
@@ -80,7 +84,7 @@ struct pid {
 	struct sock *ss;                      /**< cache */
 
 	struct user_regs_struct regs;         /**< regs backup */
-	size_t vdso_addr;                   /**< VDSO address (linux-gate.so.1) */
+	size_t vdso_addr;                     /**< VDSO address (linux-gate.so.1) */
 };
 
 /** Represents a socket */

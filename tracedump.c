@@ -1,4 +1,8 @@
 /*
+ * Adapted for x86_64 by:
+ * Ingvaras Merkys <ingvaras@gmail.com>
+ */
+/*
  * Copyright (C) 2011-2012 IITiS PAN Gliwice <http://www.iitis.pl/>
  * Author: Paweł Foremski <pjf@iitis.pl>
  * Licensed under GNU GPL v. 3
@@ -147,11 +151,9 @@ static void handle_socket(struct pid *sp, int fd)
 		/* check if TCP/UDP */
 		optlen = sizeof ss->type;
 		if (inject_getsockopt(td, sp, fd, SOL_SOCKET, SO_TYPE, &ss->type, &optlen) != 0) {
-			dbg(1, "TWO\n");
 			goto handled;
 		}
 		if (optlen != sizeof ss->type || (ss->type != SOCK_STREAM && ss->type != SOCK_DGRAM)) {
-			dbg(1, "THREE\n");
 			goto handled;
 		}
 
@@ -328,8 +330,8 @@ int main(int argc, char *argv[])
 		sp->in_socketcall = !sp->in_socketcall;
 
 		/* on exit from a successful bind() or enter to connect()/sendto() */
-		if ((sp->in_socketcall == false && regs.orig_rax == SYS_bind && regs.rax == SYS_restart_syscall) ||
-		    (sp->in_socketcall == true  && regs.orig_rax != SYS_bind)) {
+		if ((!sp->in_socketcall && regs.orig_rax == SYS_bind && regs.rax == SYS_restart_syscall) ||
+		    (sp->in_socketcall && regs.orig_rax != SYS_bind)) {
 			/* get fd number */
 			fd_arg = regs.rdi;
 			/* handle the socket underlying given fd */

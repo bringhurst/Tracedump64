@@ -1,4 +1,8 @@
 /*
+ * Adapted for x86_64 by:
+ * Ingvaras Merkys <ingvaras@gmail.com>
+ */
+/*
  * Copyright (C) 2011-2012 IITiS PAN Gliwice <http://www.iitis.pl/>
  * Author: Paweł Foremski <pjf@iitis.pl>
  * Licensed under GNU GPL v. 3
@@ -31,29 +35,6 @@ void inject_escape_socketcall(struct tracedump *td, struct pid *sp);
  */
 void inject_restore_socketcall(struct tracedump *td, struct pid *sp);
 
-/** Argument type used in _inject_socketcall */
-enum arg_type {
-	AT_LAST = 0,   /**< it was the last argument */
-	AT_VALUE,      /**< pass the value */
-	AT_MEM_IN,     /**< memory buffer: an input */
-	AT_MEM_INOUT   /**< memory buffer: an input and an output */
-};
-
-/** Inject socketcall() into running process
- *
- * Supports variable list of arguments to socketcall(), each may be of different kind
- *
- * @param td              tracedump root
- * @param pid             process id
- * @param sc_code         socketcall subcode (see include/linux/net.h)
- * @param type            enum arg_type
- * @param size_or_val     uint32_t: memory size or a value
- * @param ptr             OPTIONAL void *: address of the memory
- * @param ...
- * @param AT_LAST
- * @return                socketcall() return code
- */
-int32_t inject_socketcall(struct tracedump *td, struct pid *sp, uint32_t sc_code, ...);
 int32_t inject_getsockname_in(struct tracedump *td, struct pid *sp, int fd, struct sockaddr_in *sa);
 int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd);
 int32_t inject_getsockopt(struct tracedump *td, struct pid *sp, int fd, int level, int optname,

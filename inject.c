@@ -1,4 +1,8 @@
 /*
+ * Adapted for x86_64 by:
+ * Ingvaras Merkys <ingvaras@gmail.com>
+ */
+/*
  * Copyright (C) 2011-2012 IITiS PAN Gliwice <http://www.iitis.pl/>
  * Author: Paweł Foremski <pjf@iitis.pl>
  * Licensed under GNU GPL v. 3
@@ -125,10 +129,11 @@ int32_t inject_autobind(struct tracedump *td, struct pid *sp, int fd)
 	_prepare(sp);
 
 	/* execute syscall */
+	/* int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen); */
 	regs2.rax = SYS_bind;
 	regs2.rdi = fd;
-	regs2.rsi = regs.rsp - size;			// addr
-	regs2.rdx = size;	// addr_len
+	regs2.rsi = regs.rsp - size;  // addr
+	regs2.rdx = size;             // addr_len
 	regs2.rip = sp->vdso_addr;
 	ptrace_setregs(sp, &regs2);
 	ptrace_cont_syscall(sp, 0, true);   // enter...
@@ -203,7 +208,7 @@ void inject_escape_socketcall(struct tracedump *td, struct pid *sp)
 	ptrace_getregs(sp, &regs);
 	memcpy(&sp->regs, &regs, sizeof regs);
 
-	/* update EBX so it is invalid */
+	/* update RBX so it is invalid */
 	regs.rdi = 0;
 	ptrace_setregs(sp, &regs);
 

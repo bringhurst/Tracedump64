@@ -1,9 +1,12 @@
 /*
+ * Adapted for x86_64 by:
+ * Ingvaras Merkys <ingvaras@gmail.com>
+ */
+/*
  * Copyright (C) 2011-2012 IITiS PAN Gliwice <http://www.iitis.pl/>
  * Author: Paweł Foremski <pjf@iitis.pl>
  * Licensed under GNU GPL v. 3
  */
-
 #include "tracedump.h"
 
 /** ptrace wrapper
@@ -16,7 +19,6 @@ static long _run_ptrace(enum __ptrace_request request, struct pid *sp,
 {
 	long rc;
 	int pid = sp ? sp->pid : 0;
-//	dbg(1, "Call: %d, %d, %p, %d\n", request, pid, &addr, data);
 	rc = ptrace(request, pid, addr, data);
 
 	/* rc equal -1 means error */
@@ -240,7 +242,6 @@ void ptrace_write(struct pid *sp, unsigned long addr, void *vptr, int len)
 	count = 0;
 
 	while (count < len) {
-//		dbg(1, "Writing %p to %p\n", (void *) *word++, addr+count);
 		run_ptrace(PTRACE_POKETEXT, sp, addr + count, *word++);
 		count += 8;
 	}
