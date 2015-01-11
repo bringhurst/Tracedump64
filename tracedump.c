@@ -141,7 +141,6 @@ static void handle_socket(struct pid *sp, int fd)
 
 		/* check if AF_INET, get local address */
 		if (inject_getsockname_in(td, sp, fd, &sa) != 0) {
-			dbg(1, "ONE\n");
 			goto handled;
 		}
 
@@ -156,7 +155,6 @@ static void handle_socket(struct pid *sp, int fd)
 			goto handled;
 		}
 
-		dbg(1, "THIS\n");
 		/* autobind if necessary */
 		if (!sa.sin_port) {
 			if (inject_autobind(td, sp, fd) != 0) {
@@ -169,7 +167,6 @@ static void handle_socket(struct pid *sp, int fd)
 				goto handled;
 			}
 		}
-		dbg(1, "NEVER HAPPENS. PORT = %d\n", sa.sin_port);
 		ss->port = ntohs(sa.sin_port);
 
 		port_add(ss, true);
