@@ -1,3 +1,5 @@
+Tracedump64 is a fork of tracedump adapted for x86_64 architecture.
+
 ABOUT
 =====
 
