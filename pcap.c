@@ -152,7 +152,7 @@ void *sniffer_thread(void *arg)
 		pp.incl_len = inclen + sizeof ps;
 		fwrite(&pp, sizeof pp, 1, td->pc->fp);
 
-		/* write the SSL header */
+		/* write the SLL header */
 		ps.sll_pkttype  = ntohs(ll.sll_pkttype);
 		ps.sll_hatype   = ntohs(ll.sll_hatype);
 		ps.sll_halen    = ntohs(ll.sll_halen);

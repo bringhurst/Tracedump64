@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
 
-	while (EXITING == false) {
+	while (!EXITING) {
 		/* wait for syscall from any pid */
 		stopped_pid = ptrace_wait(NULL, &status);
 

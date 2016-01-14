@@ -7,3 +7,5 @@ doc/out
 .project
 .settings
 .metadata
+*.json
+.idea/
